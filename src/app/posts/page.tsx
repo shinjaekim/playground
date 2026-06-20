@@ -25,7 +25,7 @@ export default async function PostsPage() {
                 </Typography>
                 <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
                   {post.tags.map((tag) => (
-                    <Chip key={tag} label={tag} size="small" />
+                    <Chip key={tag.id} label={tag.name} size="small" />
                   ))}
                 </Box>
               </Box>

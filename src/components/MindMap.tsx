@@ -34,7 +34,7 @@ export default function MindMap({ data, posts }: { data: GraphData; posts: PostM
 
   const relatedPosts = useMemo(() => {
     if (!selected) return [];
-    return posts.filter((p) => p.tags.includes(selected.id));
+    return posts.filter((p) => p.tags.some((t) => t.slug === selected.id));
   }, [selected, posts]);
 
   const nodeCanvasObject = useCallback(
@@ -171,13 +171,13 @@ export default function MindMap({ data, posts }: { data: GraphData; posts: PostM
                   <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 0.5 }}>
                     {post.tags.map((tag) => (
                       <Chip
-                        key={tag}
-                        label={tag}
+                        key={tag.id}
+                        label={tag.name}
                         size="small"
                         sx={{
                           height: 18,
                           fontSize: 10,
-                          background: tag === selected.id ? "#1565c0" : "#2a2a2a",
+                          background: tag.slug === selected.id ? "#1565c0" : "#2a2a2a",
                           color: "#ccc",
                         }}
                       />
