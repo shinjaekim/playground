@@ -44,8 +44,8 @@ export default function MindMap({ data, posts }: { data: GraphData; posts: PostM
       const dimmed = connectedIds && !isConnected;
 
       // 기본 반지름: 글 수가 많을수록 로그 스케일로 커짐
-      const baseRadius = 4 + Math.log((node.count ?? 1) + 1) * 3;
-      const radius = isActive ? baseRadius + 3 : baseRadius;
+      const baseRadius = 2 + Math.log((node.count ?? 1) + 1) * 1.5;
+      const radius = isActive ? baseRadius + 2 : baseRadius;
       const alpha = dimmed ? 0.12 : 1;
 
       ctx.save();
