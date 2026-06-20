@@ -2,8 +2,10 @@ import { getAllPostMeta } from "@/lib/posts";
 import { Box, Chip, Container, Divider, Typography } from "@mui/material";
 import Link from "next/link";
 
-export default function PostsPage() {
-  const posts = getAllPostMeta().sort((a, b) => (a.date < b.date ? 1 : -1));
+export const revalidate = 60;
+
+export default async function PostsPage() {
+  const posts = await getAllPostMeta();
 
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>

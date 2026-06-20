@@ -1,8 +1,10 @@
 import MindMapWrapper from "@/components/MindMapWrapper";
 import { getAllPostMeta, buildGraphData } from "@/lib/posts";
 
-export default function GraphPage() {
-  const posts = getAllPostMeta();
+export const revalidate = 60;
+
+export default async function GraphPage() {
+  const posts = await getAllPostMeta();
   const graphData = buildGraphData(posts);
 
   return (

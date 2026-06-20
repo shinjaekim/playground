@@ -1,10 +1,6 @@
-import fs from "fs";
-import path from "path";
-import matter from "gray-matter";
 import { remark } from "remark";
 import html from "remark-html";
-
-const contentDir = path.join(process.cwd(), "content");
+import { supabase } from "./supabase";
 
 export interface PostMeta {
   slug: string;
@@ -23,30 +19,30 @@ export interface GraphData {
   links: { source: string; target: string }[];
 }
 
-export function getAllPostMeta(): PostMeta[] {
-  const files = fs.readdirSync(contentDir).filter((f) => f.endsWith(".md"));
-  return files.map((filename) => {
-    const slug = filename.replace(/\.md$/, "");
-    const raw = fs.readFileSync(path.join(contentDir, filename), "utf8");
-    const { data } = matter(raw);
-    return {
-      slug,
-      title: data.title ?? slug,
-      date: data.date ?? "",
-      tags: data.tags ?? [],
-      links: data.links ?? [],
-    };
-  });
+export async function getAllPostMeta(): Promise<PostMeta[]> {
+  const { data, error } = await supabase
+    .from("posts")
+    .select("slug, title, date, tags, links")
+    .order("date", { ascending: false });
+
+  if (error) throw new Error(error.message);
+  return data ?? [];
 }
 
 export async function getPost(slug: string): Promise<Post> {
-  const raw = fs.readFileSync(path.join(contentDir, `${slug}.md`), "utf8");
-  const { data, content } = matter(raw);
-  const processed = await remark().use(html).process(content);
+  const { data, error } = await supabase
+    .from("posts")
+    .select("slug, title, date, tags, links, content")
+    .eq("slug", slug)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const processed = await remark().use(html).process(data.content);
   return {
-    slug,
-    title: data.title ?? slug,
-    date: data.date ?? "",
+    slug: data.slug,
+    title: data.title,
+    date: data.date,
     tags: data.tags ?? [],
     links: data.links ?? [],
     contentHtml: processed.toString(),
