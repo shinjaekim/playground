@@ -26,28 +26,11 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
 
       <Box sx={{ mb: 4, display: "flex", gap: 1, flexWrap: "wrap" }}>
         {post.tags.map((tag) => (
-          <Chip key={tag} label={tag} size="small" />
+          <Chip key={tag.id} label={tag.name} size="small" />
         ))}
       </Box>
 
       <div dangerouslySetInnerHTML={{ __html: post.contentHtml }} />
-
-      {post.links.length > 0 && (
-        <Box sx={{ mt: 6 }}>
-          <Typography variant="h6" gutterBottom>
-            연결된 글
-          </Typography>
-          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
-            {post.links.map((linkedSlug) => (
-              <Link key={linkedSlug} href={`/posts/${linkedSlug}`} style={{ textDecoration: "none" }}>
-                <Button variant="outlined" size="small">
-                  {linkedSlug}
-                </Button>
-              </Link>
-            ))}
-          </Box>
-        </Box>
-      )}
     </Container>
   );
 }
