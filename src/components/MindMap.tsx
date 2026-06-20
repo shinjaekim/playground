@@ -6,7 +6,7 @@ import ForceGraph2D from "react-force-graph-2d";
 import { Box, Chip, Divider, List, ListItemButton, ListItemText, Paper, Typography } from "@mui/material";
 import type { GraphData, PostMeta } from "@/lib/posts";
 
-type NodeObject = { id: string; name: string; x?: number; y?: number; color?: string };
+type NodeObject = { id: string; name: string; count: number; x?: number; y?: number; color?: string };
 type LinkObject = GraphData["links"][number];
 
 const NODE_COLOR = "#4fc3f7";
@@ -43,7 +43,9 @@ export default function MindMap({ data, posts }: { data: GraphData; posts: PostM
       const isConnected = connectedIds ? connectedIds.has(node.id) : true;
       const dimmed = connectedIds && !isConnected;
 
-      const radius = isActive ? 9 : 6;
+      // 기본 반지름: 글 수가 많을수록 로그 스케일로 커짐
+      const baseRadius = 4 + Math.log((node.count ?? 1) + 1) * 3;
+      const radius = isActive ? baseRadius + 3 : baseRadius;
       const alpha = dimmed ? 0.12 : 1;
 
       ctx.save();
@@ -120,6 +122,9 @@ export default function MindMap({ data, posts }: { data: GraphData; posts: PostM
           </Typography>
           <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
             {hovered.name}
+          </Typography>
+          <Typography variant="caption" color="grey.500">
+            글 {hovered.count}개
           </Typography>
         </Paper>
       )}

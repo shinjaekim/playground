@@ -15,7 +15,7 @@ export interface Post extends PostMeta {
 }
 
 export interface GraphData {
-  nodes: { id: string; name: string }[];
+  nodes: { id: string; name: string; count: number }[];
   links: { source: string; target: string }[];
 }
 
@@ -51,12 +51,19 @@ export async function getPost(slug: string): Promise<Post> {
 
 // 노드 = 태그, 엣지 = 같은 글에 함께 등장한 태그 쌍
 export function buildGraphData(posts: PostMeta[]): GraphData {
-  const tagSet = new Set<string>();
+  // 태그별 등장 횟수 집계 (고아 태그는 posts가 비어있으면 자연히 제외됨)
+  const tagCount = new Map<string, number>();
   for (const post of posts) {
-    for (const tag of post.tags) tagSet.add(tag);
+    for (const tag of post.tags) {
+      tagCount.set(tag, (tagCount.get(tag) ?? 0) + 1);
+    }
   }
 
-  const nodes = Array.from(tagSet).map((tag) => ({ id: tag, name: tag }));
+  const nodes = Array.from(tagCount.entries()).map(([tag, count]) => ({
+    id: tag,
+    name: tag,
+    count,
+  }));
 
   const linkSet = new Set<string>();
   const links: GraphData["links"] = [];
