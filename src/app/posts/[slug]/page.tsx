@@ -1,10 +1,8 @@
-import { getAllPostMeta, getPost } from "@/lib/posts";
+import { getPost } from "@/lib/posts";
 import { Container, Typography, Chip, Box, Button } from "@mui/material";
 import Link from "next/link";
 
-export async function generateStaticParams() {
-  return getAllPostMeta().map((p) => ({ slug: p.slug }));
-}
+export const revalidate = 60;
 
 export default async function PostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
