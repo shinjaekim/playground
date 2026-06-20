@@ -19,7 +19,7 @@ export interface Post extends PostMeta {
 }
 
 export interface GraphData {
-  nodes: { id: string; name: string; tags: string[] }[];
+  nodes: { id: string; name: string }[];
   links: { source: string; target: string }[];
 }
 
@@ -53,45 +53,29 @@ export async function getPost(slug: string): Promise<Post> {
   };
 }
 
+// 노드 = 태그, 엣지 = 같은 글에 함께 등장한 태그 쌍
 export function buildGraphData(posts: PostMeta[]): GraphData {
-  const slugSet = new Set(posts.map((p) => p.slug));
+  const tagSet = new Set<string>();
+  for (const post of posts) {
+    for (const tag of post.tags) tagSet.add(tag);
+  }
+
+  const nodes = Array.from(tagSet).map((tag) => ({ id: tag, name: tag }));
+
   const linkSet = new Set<string>();
   const links: GraphData["links"] = [];
 
-  const addLink = (source: string, target: string) => {
-    const key = [source, target].sort().join("--");
-    if (!linkSet.has(key)) {
-      linkSet.add(key);
-      links.push({ source, target });
-    }
-  };
-
-  // explicit links from frontmatter
   for (const post of posts) {
-    for (const target of post.links) {
-      if (slugSet.has(target)) addLink(post.slug, target);
-    }
-  }
-
-  // implicit links: posts sharing a tag
-  const tagMap = new Map<string, string[]>();
-  for (const post of posts) {
-    for (const tag of post.tags) {
-      const group = tagMap.get(tag) ?? [];
-      group.push(post.slug);
-      tagMap.set(tag, group);
-    }
-  }
-  for (const slugs of tagMap.values()) {
-    for (let i = 0; i < slugs.length; i++) {
-      for (let j = i + 1; j < slugs.length; j++) {
-        addLink(slugs[i], slugs[j]);
+    for (let i = 0; i < post.tags.length; i++) {
+      for (let j = i + 1; j < post.tags.length; j++) {
+        const key = [post.tags[i], post.tags[j]].sort().join("--");
+        if (!linkSet.has(key)) {
+          linkSet.add(key);
+          links.push({ source: post.tags[i], target: post.tags[j] });
+        }
       }
     }
   }
 
-  return {
-    nodes: posts.map((p) => ({ id: p.slug, name: p.title, tags: p.tags })),
-    links,
-  };
+  return { nodes, links };
 }

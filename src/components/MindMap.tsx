@@ -1,70 +1,68 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import ForceGraph2D from "react-force-graph-2d";
-import { Box, Chip, Paper, Typography } from "@mui/material";
-import type { GraphData } from "@/lib/posts";
+import { Box, Chip, Divider, List, ListItemButton, ListItemText, Paper, Typography } from "@mui/material";
+import type { GraphData, PostMeta } from "@/lib/posts";
 
-type NodeObject = GraphData["nodes"][number] & { x?: number; y?: number; color?: string };
+type NodeObject = { id: string; name: string; x?: number; y?: number; color?: string };
 type LinkObject = GraphData["links"][number];
 
-export default function MindMap({ data }: { data: GraphData }) {
+const NODE_COLOR = "#4fc3f7";
+const NODE_COLOR_HOVER = "#81d4fa";
+
+export default function MindMap({ data, posts }: { data: GraphData; posts: PostMeta[] }) {
   const router = useRouter();
   const [hovered, setHovered] = useState<NodeObject | null>(null);
+  const [selected, setSelected] = useState<NodeObject | null>(null);
 
   const connectedIds = useMemo(() => {
-    if (!hovered) return null;
-    const ids = new Set<string>([hovered.id]);
+    const source = hovered ?? selected;
+    if (!source) return null;
+    const ids = new Set<string>([source.id]);
     for (const link of data.links) {
       const src = typeof link.source === "object" ? (link.source as NodeObject).id : link.source;
       const tgt = typeof link.target === "object" ? (link.target as NodeObject).id : link.target;
-      if (src === hovered.id || tgt === hovered.id) {
+      if (src === source.id || tgt === source.id) {
         ids.add(src);
         ids.add(tgt);
       }
     }
     return ids;
-  }, [hovered, data.links]);
+  }, [hovered, selected, data.links]);
 
-  const handleNodeHover = useCallback((node: NodeObject | null) => {
-    setHovered(node);
-  }, []);
-
-  const handleNodeClick = useCallback(
-    (node: NodeObject) => {
-      router.push(`/posts/${node.id}`);
-    },
-    [router]
-  );
+  const relatedPosts = useMemo(() => {
+    if (!selected) return [];
+    return posts.filter((p) => p.tags.includes(selected.id));
+  }, [selected, posts]);
 
   const nodeCanvasObject = useCallback(
     (node: NodeObject, ctx: CanvasRenderingContext2D, globalScale: number) => {
-      const isHovered = hovered?.id === node.id;
+      const isActive = hovered?.id === node.id || selected?.id === node.id;
       const isConnected = connectedIds ? connectedIds.has(node.id) : true;
       const dimmed = connectedIds && !isConnected;
 
-      const radius = isHovered ? 9 : 6;
+      const radius = isActive ? 9 : 6;
       const alpha = dimmed ? 0.12 : 1;
-      const baseColor = node.color ?? "#4fc3f7";
 
       ctx.save();
       ctx.globalAlpha = alpha;
 
-      if (isHovered) {
+      if (isActive) {
         ctx.beginPath();
         ctx.arc(node.x!, node.y!, radius + 5, 0, 2 * Math.PI);
-        ctx.fillStyle = baseColor + "33";
+        ctx.fillStyle = NODE_COLOR + "33";
         ctx.fill();
       }
 
       ctx.beginPath();
       ctx.arc(node.x!, node.y!, radius, 0, 2 * Math.PI);
-      ctx.fillStyle = baseColor;
+      ctx.fillStyle = isActive ? NODE_COLOR_HOVER : NODE_COLOR;
       ctx.fill();
 
-      const fontSize = (isHovered ? 13 : 11) / globalScale;
-      ctx.font = `${isHovered ? "bold " : ""}${fontSize}px Sans-Serif`;
+      const fontSize = (isActive ? 13 : 11) / globalScale;
+      ctx.font = `${isActive ? "bold " : ""}${fontSize}px Sans-Serif`;
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
       ctx.fillStyle = "#ffffff";
@@ -72,65 +70,118 @@ export default function MindMap({ data }: { data: GraphData }) {
 
       ctx.restore();
     },
-    [hovered, connectedIds]
+    [hovered, selected, connectedIds]
   );
 
   const linkColor = useCallback(
     (link: LinkObject) => {
-      if (!connectedIds) return "#555";
+      if (!connectedIds) return "#333";
       const src = typeof link.source === "object" ? (link.source as NodeObject).id : link.source;
       const tgt = typeof link.target === "object" ? (link.target as NodeObject).id : link.target;
-      return connectedIds.has(src) && connectedIds.has(tgt) ? "#aaa" : "#1e1e1e";
+      return connectedIds.has(src) && connectedIds.has(tgt) ? "#888" : "#1a1a1a";
     },
     [connectedIds]
   );
 
   return (
-    <Box sx={{ position: "relative", width: "100%", height: "100vh", background: "#0f0f0f" }}>
+    <Box sx={{ position: "relative", width: "100%", height: "100%", background: "#0f0f0f" }}>
       <ForceGraph2D
         graphData={data}
         nodeLabel=""
-        nodeAutoColorBy="tags"
         nodeRelSize={6}
         linkColor={linkColor}
-        onNodeHover={handleNodeHover}
-        onNodeClick={handleNodeClick}
+        onNodeHover={(node) => setHovered(node as NodeObject | null)}
+        onNodeClick={(node) => {
+          const n = node as NodeObject;
+          setSelected((prev) => (prev?.id === n.id ? null : n));
+        }}
+        onBackgroundClick={() => setSelected(null)}
         nodeCanvasObject={nodeCanvasObject}
         nodeCanvasObjectMode={() => "replace"}
       />
 
-      {hovered && (
+      {/* hover 툴팁 */}
+      {hovered && !selected && (
         <Paper
-          elevation={4}
           sx={{
             position: "absolute",
             bottom: 32,
             right: 32,
-            p: 2.5,
-            minWidth: 220,
-            maxWidth: 300,
+            px: 2,
+            py: 1,
             background: "#1a1a1a",
             color: "#fff",
             border: "1px solid #333",
             pointerEvents: "none",
           }}
         >
-          <Typography variant="subtitle2" color="grey.500" sx={{ mb: 0.5 }}>
-            클릭하면 글로 이동
+          <Typography variant="body2" color="grey.400">
+            클릭하면 관련 글 보기
           </Typography>
-          <Typography variant="h6" sx={{ mb: 1 }}>
+          <Typography variant="subtitle1" sx={{ fontWeight: 600 }}>
             {hovered.name}
           </Typography>
-          <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
-            {hovered.tags.map((tag) => (
-              <Chip
-                key={tag}
-                label={tag}
-                size="small"
-                sx={{ background: "#333", color: "#ccc", fontSize: 11 }}
-              />
-            ))}
+        </Paper>
+      )}
+
+      {/* 클릭 시 관련 글 목록 패널 */}
+      {selected && (
+        <Paper
+          elevation={6}
+          sx={{
+            position: "absolute",
+            top: 24,
+            right: 24,
+            width: 280,
+            maxHeight: "80vh",
+            overflow: "auto",
+            background: "#1a1a1a",
+            color: "#fff",
+            border: "1px solid #333",
+          }}
+        >
+          <Box sx={{ px: 2.5, pt: 2.5, pb: 1.5 }}>
+            <Typography variant="caption" color="grey.500">
+              태그
+            </Typography>
+            <Typography variant="h6" sx={{ fontWeight: 700 }}>
+              {selected.name}
+            </Typography>
+            <Typography variant="caption" color="grey.500">
+              관련 글 {relatedPosts.length}개
+            </Typography>
           </Box>
+          <Divider sx={{ borderColor: "#333" }} />
+          <List dense disablePadding>
+            {relatedPosts.map((post) => (
+              <ListItemButton
+                key={post.slug}
+                onClick={() => router.push(`/posts/${post.slug}`)}
+                sx={{ "&:hover": { background: "#2a2a2a" } }}
+              >
+                <Box sx={{ py: 0.5 }}>
+                  <Typography variant="body2" sx={{ color: "#fff" }}>
+                    {post.title}
+                  </Typography>
+                  <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap", mt: 0.5 }}>
+                    {post.tags.map((tag) => (
+                      <Chip
+                        key={tag}
+                        label={tag}
+                        size="small"
+                        sx={{
+                          height: 18,
+                          fontSize: 10,
+                          background: tag === selected.id ? "#1565c0" : "#2a2a2a",
+                          color: "#ccc",
+                        }}
+                      />
+                    ))}
+                  </Box>
+                </Box>
+              </ListItemButton>
+            ))}
+          </List>
         </Paper>
       )}
     </Box>

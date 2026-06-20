@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import ThemeRegistry from "@/components/ThemeRegistry";
+import Navbar from "@/components/Navbar";
 
 export const metadata: Metadata = {
   title: "playground",
@@ -14,7 +15,10 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body>
-        <ThemeRegistry>{children}</ThemeRegistry>
+        <ThemeRegistry>
+          <Navbar />
+          {children}
+        </ThemeRegistry>
       </body>
     </html>
   );
