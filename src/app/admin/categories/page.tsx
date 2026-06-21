@@ -33,6 +33,8 @@ function CategoryNode({ node, allCategories, depth = 0 }: { node: any; allCatego
   const updateAction = updateCategory.bind(null, node.id);
   const deleteAction = deleteCategory.bind(null, node.id);
 
+  const isRoot = depth === 0;
+
   return (
     <Box>
       <Box
@@ -40,13 +42,23 @@ function CategoryNode({ node, allCategories, depth = 0 }: { node: any; allCatego
           display: "flex",
           alignItems: "center",
           gap: 2,
-          py: 1.5,
-          pl: depth * 3,
+          py: isRoot ? 2 : 1.5,
+          pl: isRoot ? 1.5 : depth * 3,
+          ...(isRoot && {
+            bgcolor: "grey.100",
+            borderLeft: "3px solid",
+            borderColor: "primary.main",
+            borderRadius: 1,
+            mb: 0.5,
+          }),
         }}
       >
         <Box sx={{ flex: 1 }}>
           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-            <Typography variant="body1" sx={{ fontWeight: depth === 0 ? 700 : 400 }}>
+            <Typography
+              variant={isRoot ? "subtitle1" : "body1"}
+              sx={{ fontWeight: isRoot ? 700 : 400, letterSpacing: isRoot ? 0.3 : 0 }}
+            >
               {node.name}
             </Typography>
             <Chip label={node.domain} size="small" variant="outlined" sx={{ fontSize: 10 }} />
