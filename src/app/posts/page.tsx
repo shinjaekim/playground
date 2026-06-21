@@ -22,9 +22,7 @@ export default async function PostsPage({
     const selected = categories.find((c) => c.slug === categorySlug);
     if (selected) {
       const descendantIds = getCategoryDescendantIds(categories, selected.id);
-      posts = allPosts.filter((post) =>
-        post.tags.some((tag) => tag.category_id && descendantIds.includes(tag.category_id))
-      );
+      posts = allPosts.filter((post) => post.category_id && descendantIds.includes(post.category_id));
     }
   }
 

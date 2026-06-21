@@ -12,11 +12,12 @@ export async function createPost(formData: FormData) {
   const title = String(formData.get("title")).trim();
   const date = String(formData.get("date")).trim();
   const content = String(formData.get("content")).trim();
+  const categoryId = String(formData.get("categoryId")).trim() || null;
   const tagIds = formData.getAll("tagIds") as string[];
 
   const { data: post, error } = await supabaseAdmin
     .from("posts")
-    .insert({ slug, title, date, content })
+    .insert({ slug, title, date, content, category_id: categoryId })
     .select("id")
     .single();
 
@@ -39,11 +40,12 @@ export async function updatePost(slug: string, formData: FormData) {
   const title = String(formData.get("title")).trim();
   const date = String(formData.get("date")).trim();
   const content = String(formData.get("content")).trim();
+  const categoryId = String(formData.get("categoryId")).trim() || null;
   const tagIds = formData.getAll("tagIds") as string[];
 
   const { data: post, error } = await supabaseAdmin
     .from("posts")
-    .update({ title, date, content, updated_at: new Date().toISOString() })
+    .update({ title, date, content, category_id: categoryId, updated_at: new Date().toISOString() })
     .eq("slug", slug)
     .select("id")
     .single();
@@ -81,11 +83,11 @@ export async function deletePost(slug: string) {
 
 // ─── Tags ────────────────────────────────────────────────
 
-export async function createTagInline(name: string, categoryId: string): Promise<Tag> {
+export async function createTagInline(name: string): Promise<Tag> {
   const slug = name.toLowerCase().trim().replace(/\s+/g, "-");
   const { data, error } = await supabaseAdmin
     .from("tags")
-    .insert({ name: name.trim(), slug, category_id: categoryId || null })
+    .insert({ name: name.trim(), slug })
     .select("id, slug, name")
     .single();
   if (error) throw new Error(error.message);
@@ -95,12 +97,9 @@ export async function createTagInline(name: string, categoryId: string): Promise
 
 export async function createTagAdmin(formData: FormData) {
   const name = String(formData.get("name")).trim();
-  const categoryId = String(formData.get("categoryId")).trim();
   const slug = name.toLowerCase().replace(/\s+/g, "-");
 
-  const { error } = await supabaseAdmin
-    .from("tags")
-    .insert({ name, slug, category_id: categoryId || null });
+  const { error } = await supabaseAdmin.from("tags").insert({ name, slug });
   if (error) throw new Error(error.message);
 
   revalidatePath("/admin/tags");
@@ -108,12 +107,11 @@ export async function createTagAdmin(formData: FormData) {
 
 export async function updateTag(id: string, formData: FormData) {
   const name = String(formData.get("name")).trim();
-  const categoryId = String(formData.get("categoryId")).trim();
   const slug = name.toLowerCase().replace(/\s+/g, "-");
 
   const { error } = await supabaseAdmin
     .from("tags")
-    .update({ name, slug, category_id: categoryId || null })
+    .update({ name, slug })
     .eq("id", id);
   if (error) throw new Error(error.message);
 

@@ -6,7 +6,6 @@ export interface Tag {
   id: string;
   slug: string;
   name: string;
-  category_id?: string | null;
 }
 
 export interface Category {
@@ -21,6 +20,7 @@ export interface PostMeta {
   title: string;
   date: string;
   tags: Tag[];
+  category_id: string | null;
 }
 
 export interface Post extends PostMeta {
@@ -54,7 +54,7 @@ export function getCategoryDescendantIds(categories: Category[], rootId: string)
 export async function getAllPostMeta(): Promise<PostMeta[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("slug, title, date, post_tags(tags(id, slug, name, category_id))")
+    .select("slug, title, date, category_id, post_tags(tags(id, slug, name))")
     .order("date", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -63,6 +63,7 @@ export async function getAllPostMeta(): Promise<PostMeta[]> {
     slug: post.slug,
     title: post.title,
     date: post.date,
+    category_id: post.category_id ?? null,
     tags: (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean),
   }));
 }
@@ -70,7 +71,7 @@ export async function getAllPostMeta(): Promise<PostMeta[]> {
 export async function getPost(slug: string): Promise<Post> {
   const { data, error } = await supabase
     .from("posts")
-    .select("slug, title, date, content, post_tags(tags(id, slug, name))")
+    .select("slug, title, date, content, category_id, post_tags(tags(id, slug, name))")
     .eq("slug", slug)
     .single();
 
@@ -81,6 +82,7 @@ export async function getPost(slug: string): Promise<Post> {
     slug: data.slug,
     title: data.title,
     date: data.date,
+    category_id: data.category_id ?? null,
     tags: (data.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean),
     contentHtml: processed.toString(),
   };

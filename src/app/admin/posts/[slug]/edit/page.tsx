@@ -1,26 +1,41 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
 import { updatePost, createTagInline } from "@/lib/actions";
-import { Box, Button, Container, TextField, Typography } from "@mui/material";
+import { Box, Button, Container, MenuItem, TextField, Typography } from "@mui/material";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import TagSelector from "@/components/TagSelector";
+import type { Category } from "@/lib/posts";
+
+function flattenCategories(
+  categories: Category[],
+  parentId: string | null = null,
+  depth = 0
+): Array<{ category: Category; depth: number }> {
+  return categories
+    .filter((c) => c.parent_id === parentId)
+    .flatMap((c) => [
+      { category: c, depth },
+      ...flattenCategories(categories, c.id, depth + 1),
+    ]);
+}
 
 export default async function EditPostPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
-  const [{ data: post }, { data: allTags }, { data: allCategories }] = await Promise.all([
+  const [{ data: post }, { data: allTags }, { data: categories }] = await Promise.all([
     supabaseAdmin
       .from("posts")
-      .select("slug, title, date, content, post_tags(tags(id, slug, name))")
+      .select("slug, title, date, content, category_id, post_tags(tags(id, slug, name))")
       .eq("slug", slug)
       .single(),
     supabaseAdmin.from("tags").select("id, slug, name").order("name"),
-    supabaseAdmin.from("categories").select("id, slug, name").order("name"),
+    supabaseAdmin.from("categories").select("id, slug, name, parent_id").order("name"),
   ]);
 
   if (!post) notFound();
 
   const currentTags = (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean);
+  const flatCats = flattenCategories((categories ?? []) as Category[]);
   const action = updatePost.bind(null, slug);
 
   return (
@@ -40,9 +55,22 @@ export default async function EditPostPage({ params }: { params: Promise<{ slug:
             defaultValue={post.date}
             slotProps={{ inputLabel: { shrink: true } }}
           />
+          <TextField
+            name="categoryId"
+            select
+            label="카테고리"
+            defaultValue={post.category_id ?? ""}
+            fullWidth
+          >
+            <MenuItem value="">— 미지정 —</MenuItem>
+            {flatCats.map(({ category, depth }) => (
+              <MenuItem key={category.id} value={category.id} sx={{ pl: 2 + depth * 2 }}>
+                {category.name}
+              </MenuItem>
+            ))}
+          </TextField>
           <TagSelector
             allTags={allTags ?? []}
-            allCategories={allCategories ?? []}
             initialSelected={currentTags}
             createTagInline={createTagInline}
           />
