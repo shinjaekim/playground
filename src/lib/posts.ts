@@ -6,6 +6,14 @@ export interface Tag {
   id: string;
   slug: string;
   name: string;
+  category_id?: string | null;
+}
+
+export interface Category {
+  id: string;
+  slug: string;
+  name: string;
+  parent_id: string | null;
 }
 
 export interface PostMeta {
@@ -24,10 +32,29 @@ export interface GraphData {
   links: { source: string; target: string }[];
 }
 
+export async function getCategories(): Promise<Category[]> {
+  const { data, error } = await supabase
+    .from("categories")
+    .select("id, slug, name, parent_id")
+    .order("name");
+  if (error) throw new Error(error.message);
+  return data ?? [];
+}
+
+export function getCategoryDescendantIds(categories: Category[], rootId: string): string[] {
+  const ids = [rootId];
+  for (const cat of categories) {
+    if (cat.parent_id === rootId) {
+      ids.push(...getCategoryDescendantIds(categories, cat.id));
+    }
+  }
+  return ids;
+}
+
 export async function getAllPostMeta(): Promise<PostMeta[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("slug, title, date, post_tags(tags(id, slug, name))")
+    .select("slug, title, date, post_tags(tags(id, slug, name, category_id))")
     .order("date", { ascending: false });
 
   if (error) throw new Error(error.message);
