@@ -1,16 +1,32 @@
 import { createPost, createTagInline } from "@/lib/actions";
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { Box, Button, Container, TextField, Typography } from "@mui/material";
+import { Box, Button, Container, MenuItem, TextField, Typography } from "@mui/material";
 import Link from "next/link";
 import TagSelector from "@/components/TagSelector";
+import type { Category } from "@/lib/posts";
+
+function flattenCategories(
+  categories: Category[],
+  parentId: string | null = null,
+  depth = 0
+): Array<{ category: Category; depth: number }> {
+  return categories
+    .filter((c) => c.parent_id === parentId)
+    .flatMap((c) => [
+      { category: c, depth },
+      ...flattenCategories(categories, c.id, depth + 1),
+    ]);
+}
 
 export default async function NewPostPage() {
   const today = new Date().toISOString().split("T")[0];
 
-  const [{ data: allTags }, { data: allCategories }] = await Promise.all([
+  const [{ data: allTags }, { data: categories }] = await Promise.all([
     supabaseAdmin.from("tags").select("id, slug, name").order("name"),
-    supabaseAdmin.from("categories").select("id, slug, name").order("name"),
+    supabaseAdmin.from("categories").select("id, slug, name, parent_id").order("name"),
   ]);
+
+  const flatCats = flattenCategories((categories ?? []) as Category[]);
 
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>
@@ -36,11 +52,15 @@ export default async function NewPostPage() {
             defaultValue={today}
             slotProps={{ inputLabel: { shrink: true } }}
           />
-          <TagSelector
-            allTags={allTags ?? []}
-            allCategories={allCategories ?? []}
-            createTagInline={createTagInline}
-          />
+          <TextField name="categoryId" select label="카테고리" defaultValue="" fullWidth>
+            <MenuItem value="">— 미지정 —</MenuItem>
+            {flatCats.map(({ category, depth }) => (
+              <MenuItem key={category.id} value={category.id} sx={{ pl: 2 + depth * 2 }}>
+                {category.name}
+              </MenuItem>
+            ))}
+          </TextField>
+          <TagSelector allTags={allTags ?? []} createTagInline={createTagInline} />
           <TextField
             name="content"
             label="내용 (Markdown)"

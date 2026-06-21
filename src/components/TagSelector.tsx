@@ -10,53 +10,35 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  MenuItem,
   TextField,
 } from "@mui/material";
 import type { Tag } from "@/lib/posts";
 
-interface Category {
-  id: string;
-  slug: string;
-  name: string;
-}
-
 interface Props {
   allTags: Tag[];
-  allCategories: Category[];
   initialSelected?: Tag[];
-  createTagInline: (name: string, categoryId: string) => Promise<Tag>;
+  createTagInline: (name: string) => Promise<Tag>;
 }
 
-export default function TagSelector({
-  allTags,
-  allCategories,
-  initialSelected = [],
-  createTagInline,
-}: Props) {
+export default function TagSelector({ allTags, initialSelected = [], createTagInline }: Props) {
   const [tags, setTags] = useState<Tag[]>(allTags);
   const [selected, setSelected] = useState<Tag[]>(initialSelected);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTagName, setNewTagName] = useState("");
-  const [newTagCategory, setNewTagCategory] = useState("");
   const [isPending, startTransition] = useTransition();
-
-  const handleSelect = (_: unknown, value: Tag[]) => setSelected(value);
 
   const openCreateDialog = (inputValue: string) => {
     setNewTagName(inputValue);
-    setNewTagCategory("");
     setDialogOpen(true);
   };
 
   const handleCreate = () => {
     startTransition(async () => {
-      const newTag = await createTagInline(newTagName, newTagCategory);
+      const newTag = await createTagInline(newTagName);
       setTags((prev) => [...prev, newTag]);
       setSelected((prev) => [...prev, newTag]);
       setDialogOpen(false);
       setNewTagName("");
-      setNewTagCategory("");
     });
   };
 
@@ -100,7 +82,7 @@ export default function TagSelector({
 
       <Dialog open={dialogOpen} onClose={() => setDialogOpen(false)} maxWidth="xs" fullWidth>
         <DialogTitle>새 태그 만들기</DialogTitle>
-        <DialogContent sx={{ display: "flex", flexDirection: "column", gap: 2, pt: 2 }}>
+        <DialogContent sx={{ pt: 2 }}>
           <TextField
             label="태그 이름"
             value={newTagName}
@@ -108,20 +90,6 @@ export default function TagSelector({
             helperText={`slug: ${newTagName.toLowerCase().replace(/\s+/g, "-")}`}
             fullWidth
           />
-          <TextField
-            select
-            label="카테고리"
-            value={newTagCategory}
-            onChange={(e) => setNewTagCategory(e.target.value)}
-            fullWidth
-          >
-            <MenuItem value="">— 미지정 —</MenuItem>
-            {allCategories.map((cat) => (
-              <MenuItem key={cat.id} value={cat.id}>
-                {cat.name}
-              </MenuItem>
-            ))}
-          </TextField>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDialogOpen(false)}>취소</Button>
