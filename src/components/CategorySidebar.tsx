@@ -7,6 +7,8 @@ import type { Category } from "@/lib/posts";
 interface Props {
   categories: Category[];
   selectedSlug: string | null;
+  reviewMode: boolean;
+  reviewDueCount: number;
 }
 
 function CategoryNode({
@@ -67,12 +69,12 @@ function CategoryNode({
   );
 }
 
-export default function CategorySidebar({ categories, selectedSlug }: Props) {
+export default function CategorySidebar({ categories, selectedSlug, reviewMode, reviewDueCount }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
   const roots = categories.filter((c) => c.parent_id === null);
-  const isAllSelected = selectedSlug === null;
+  const isAllSelected = !reviewMode && selectedSlug === null;
 
   const handleSelect = (slug: string) => {
     router.push(`${pathname}?category=${slug}`);
@@ -82,8 +84,50 @@ export default function CategorySidebar({ categories, selectedSlug }: Props) {
     router.push(pathname);
   };
 
+  const handleReview = () => {
+    router.push(`${pathname}?review=due`);
+  };
+
   return (
     <Box sx={{ width: 200, flexShrink: 0 }}>
+      <Box
+        onClick={handleReview}
+        sx={{
+          py: 0.4,
+          px: 1,
+          cursor: "pointer",
+          borderRadius: 1,
+          mb: 0.5,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "space-between",
+          bgcolor: reviewMode ? "warning.light" : "transparent",
+          "&:hover": { bgcolor: reviewMode ? "warning.light" : "action.hover" },
+        }}
+      >
+        <Typography
+          variant="body2"
+          sx={{ fontWeight: reviewMode ? 600 : 400, color: reviewMode ? "warning.dark" : "text.primary" }}
+        >
+          복습 시기
+        </Typography>
+        {reviewDueCount > 0 && (
+          <Typography
+            variant="caption"
+            sx={{
+              bgcolor: reviewMode ? "warning.main" : "action.disabledBackground",
+              color: reviewMode ? "warning.contrastText" : "text.secondary",
+              borderRadius: "10px",
+              px: 0.8,
+              py: 0.1,
+              fontWeight: 600,
+              lineHeight: 1.6,
+            }}
+          >
+            {reviewDueCount}
+          </Typography>
+        )}
+      </Box>
       <Box
         onClick={handleAll}
         sx={{
@@ -108,7 +152,7 @@ export default function CategorySidebar({ categories, selectedSlug }: Props) {
           key={cat.id}
           category={cat}
           categories={categories}
-          selectedSlug={selectedSlug}
+          selectedSlug={reviewMode ? null : selectedSlug}
           depth={1}
           onSelect={handleSelect}
         />
