@@ -5,6 +5,39 @@ import { redirect } from "next/navigation";
 import { supabaseAdmin } from "./supabase-admin";
 import type { Tag } from "./posts";
 
+// ─── Review ──────────────────────────────────────────────
+
+const REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60];
+
+export async function markReviewed(slug: string) {
+  const { data: post, error } = await supabaseAdmin
+    .from("posts")
+    .select("review_count")
+    .eq("slug", slug)
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  const newCount = (post.review_count ?? 0) + 1;
+  const intervalDays = REVIEW_INTERVALS[Math.min(newCount, REVIEW_INTERVALS.length - 1)];
+  const nextReviewAt = new Date();
+  nextReviewAt.setDate(nextReviewAt.getDate() + intervalDays);
+
+  const { error: updateError } = await supabaseAdmin
+    .from("posts")
+    .update({
+      review_count: newCount,
+      last_reviewed_at: new Date().toISOString(),
+      next_review_at: nextReviewAt.toISOString(),
+    })
+    .eq("slug", slug);
+
+  if (updateError) throw new Error(updateError.message);
+
+  revalidatePath("/posts");
+  revalidatePath(`/posts/${slug}`);
+}
+
 // ─── Posts ───────────────────────────────────────────────
 
 export async function createPost(formData: FormData) {
@@ -15,9 +48,11 @@ export async function createPost(formData: FormData) {
   const categoryId = String(formData.get("categoryId")).trim() || null;
   const tagIds = formData.getAll("tagIds") as string[];
 
+  const nextReviewAt = new Date(Date.now() + 86400000).toISOString();
+
   const { data: post, error } = await supabaseAdmin
     .from("posts")
-    .insert({ slug, title, date, content, category_id: categoryId })
+    .insert({ slug, title, date, content, category_id: categoryId, next_review_at: nextReviewAt })
     .select("id")
     .single();
 

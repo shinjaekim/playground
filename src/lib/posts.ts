@@ -21,6 +21,18 @@ export interface PostMeta {
   date: string;
   tags: Tag[];
   category_id: string | null;
+  review_count: number;
+  last_reviewed_at: string | null;
+  next_review_at: string | null;
+}
+
+export function getReviewStatus(nextReviewAt: string | null): "due" | "upcoming" | "ok" {
+  if (!nextReviewAt) return "due";
+  const next = new Date(nextReviewAt);
+  const now = new Date();
+  if (next <= now) return "due";
+  if (next <= new Date(now.getTime() + 3 * 86400000)) return "upcoming";
+  return "ok";
 }
 
 export interface Post extends PostMeta {
@@ -54,7 +66,7 @@ export function getCategoryDescendantIds(categories: Category[], rootId: string)
 export async function getAllPostMeta(): Promise<PostMeta[]> {
   const { data, error } = await supabase
     .from("posts")
-    .select("slug, title, date, category_id, post_tags(tags(id, slug, name))")
+    .select("slug, title, date, category_id, review_count, last_reviewed_at, next_review_at, post_tags(tags(id, slug, name))")
     .order("date", { ascending: false });
 
   if (error) throw new Error(error.message);
@@ -64,6 +76,9 @@ export async function getAllPostMeta(): Promise<PostMeta[]> {
     title: post.title,
     date: post.date,
     category_id: post.category_id ?? null,
+    review_count: post.review_count ?? 0,
+    last_reviewed_at: post.last_reviewed_at ?? null,
+    next_review_at: post.next_review_at ?? null,
     tags: (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean),
   }));
 }
@@ -71,7 +86,7 @@ export async function getAllPostMeta(): Promise<PostMeta[]> {
 export async function getPost(slug: string): Promise<Post> {
   const { data, error } = await supabase
     .from("posts")
-    .select("slug, title, date, content, category_id, post_tags(tags(id, slug, name))")
+    .select("slug, title, date, content, category_id, review_count, last_reviewed_at, next_review_at, post_tags(tags(id, slug, name))")
     .eq("slug", slug)
     .single();
 
@@ -83,6 +98,9 @@ export async function getPost(slug: string): Promise<Post> {
     title: data.title,
     date: data.date,
     category_id: data.category_id ?? null,
+    review_count: data.review_count ?? 0,
+    last_reviewed_at: data.last_reviewed_at ?? null,
+    next_review_at: data.next_review_at ?? null,
     tags: (data.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean),
     contentHtml: processed.toString(),
   };
