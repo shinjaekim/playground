@@ -197,6 +197,19 @@ export async function updateCategory(id: string, formData: FormData) {
 }
 
 export async function deleteCategory(id: string) {
+  const [{ count: childCount }, { count: postCount }, { count: tagCount }] = await Promise.all([
+    supabaseAdmin.from("categories").select("*", { count: "exact", head: true }).eq("parent_id", id),
+    supabaseAdmin.from("posts").select("*", { count: "exact", head: true }).eq("category_id", id),
+    supabaseAdmin.from("tags").select("*", { count: "exact", head: true }).eq("category_id", id),
+  ]);
+
+  if (childCount && childCount > 0)
+    throw new Error(`하위 카테고리가 ${childCount}개 있습니다. 먼저 삭제하거나 이동해주세요.`);
+  if (postCount && postCount > 0)
+    throw new Error(`이 카테고리에 글이 ${postCount}개 있습니다. 먼저 다른 카테고리로 이동해주세요.`);
+  if (tagCount && tagCount > 0)
+    throw new Error(`이 카테고리에 태그가 ${tagCount}개 있습니다. 먼저 다른 카테고리로 이동해주세요.`);
+
   const { error } = await supabaseAdmin.from("categories").delete().eq("id", id);
   if (error) throw new Error(error.message);
   revalidatePath("/admin/categories");
