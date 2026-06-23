@@ -1,5 +1,6 @@
 import { supabaseAdmin } from "@/lib/supabase-admin";
-import { createCategory, updateCategory, deleteCategory } from "@/lib/actions";
+import { createCategory, updateCategory } from "@/lib/actions";
+import DeleteCategoryButton from "@/components/DeleteCategoryButton";
 import {
   Box, Button, Chip, Container, Divider, MenuItem,
   TextField, Typography,
@@ -31,7 +32,6 @@ function buildTree(categories: Category[]) {
 
 function CategoryNode({ node, allCategories, depth = 0 }: { node: any; allCategories: Category[]; depth?: number }) {
   const updateAction = updateCategory.bind(null, node.id);
-  const deleteAction = deleteCategory.bind(null, node.id);
 
   const isRoot = depth === 0;
 
@@ -86,9 +86,7 @@ function CategoryNode({ node, allCategories, depth = 0 }: { node: any; allCatego
           <Button type="submit" size="small" variant="outlined">저장</Button>
         </Box>
 
-        <form action={deleteAction}>
-          <Button type="submit" size="small" variant="outlined" color="error">삭제</Button>
-        </form>
+        <DeleteCategoryButton id={node.id} name={node.name} />
       </Box>
 
       {node.children.map((child: any) => (

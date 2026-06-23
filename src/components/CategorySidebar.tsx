@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Box, Typography } from "@mui/material";
 import { usePathname, useRouter } from "next/navigation";
 import type { Category } from "@/lib/posts";
@@ -17,20 +18,34 @@ function CategoryNode({
   selectedSlug,
   depth,
   onSelect,
+  openIds,
+  toggleOpen,
 }: {
   category: Category;
   categories: Category[];
   selectedSlug: string | null;
   depth: number;
   onSelect: (slug: string) => void;
+  openIds: Set<string>;
+  toggleOpen: (id: string) => void;
 }) {
   const children = categories.filter((c) => c.parent_id === category.id);
-  const isSelected = selectedSlug === category.slug;
+  const isLeaf = children.length === 0;
+  const isSelected = isLeaf && selectedSlug === category.slug;
+  const isOpen = openIds.has(category.id);
+
+  function handleClick() {
+    if (isLeaf) {
+      onSelect(category.slug);
+    } else {
+      toggleOpen(category.id);
+    }
+  }
 
   return (
     <Box>
       <Box
-        onClick={() => onSelect(category.slug)}
+        onClick={handleClick}
         sx={{
           pl: depth * 2,
           py: 0.4,
@@ -43,28 +58,49 @@ function CategoryNode({
           "&:hover": { bgcolor: isSelected ? "action.selected" : "action.hover" },
         }}
       >
-        {children.length > 0 && (
-          <Typography component="span" sx={{ fontSize: 10, color: "text.secondary", lineHeight: 1 }}>
+        {!isLeaf && (
+          <Typography
+            component="span"
+            sx={{
+              fontSize: 10,
+              color: "text.disabled",
+              lineHeight: 1,
+              display: "inline-block",
+              transition: "transform 0.15s",
+              transform: isOpen ? "rotate(0deg)" : "rotate(-90deg)",
+            }}
+          >
             ▼
           </Typography>
         )}
         <Typography
           variant="body2"
-          sx={{ fontWeight: isSelected ? 600 : 400, color: isSelected ? "primary.main" : "text.primary" }}
+          sx={{
+            fontWeight: isSelected ? 600 : 400,
+            color: isSelected
+              ? "primary.main"
+              : isLeaf
+              ? "text.primary"
+              : "text.secondary",
+          }}
         >
           {category.name}
         </Typography>
       </Box>
-      {children.map((child) => (
-        <CategoryNode
-          key={child.id}
-          category={child}
-          categories={categories}
-          selectedSlug={selectedSlug}
-          depth={depth + 1}
-          onSelect={onSelect}
-        />
-      ))}
+
+      {!isLeaf && isOpen &&
+        children.map((child) => (
+          <CategoryNode
+            key={child.id}
+            category={child}
+            categories={categories}
+            selectedSlug={selectedSlug}
+            depth={depth + 1}
+            onSelect={onSelect}
+            openIds={openIds}
+            toggleOpen={toggleOpen}
+          />
+        ))}
     </Box>
   );
 }
@@ -73,8 +109,27 @@ export default function CategorySidebar({ categories, selectedSlug, reviewMode, 
   const router = useRouter();
   const pathname = usePathname();
 
+  // 부모 카테고리 ID 집합 — 초기 상태에서 모두 열림
+  const [openIds, setOpenIds] = useState<Set<string>>(() => {
+    const parentIds = new Set(
+      categories
+        .filter((c) => categories.some((other) => other.parent_id === c.id))
+        .map((c) => c.id)
+    );
+    return parentIds;
+  });
+
   const roots = categories.filter((c) => c.parent_id === null);
   const isAllSelected = !reviewMode && selectedSlug === null;
+
+  function toggleOpen(id: string) {
+    setOpenIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
 
   const handleSelect = (slug: string) => {
     router.push(`${pathname}?category=${slug}`);
@@ -93,14 +148,8 @@ export default function CategorySidebar({ categories, selectedSlug, reviewMode, 
       <Box
         onClick={handleReview}
         sx={{
-          py: 0.4,
-          px: 1,
-          cursor: "pointer",
-          borderRadius: 1,
-          mb: 0.5,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
+          py: 0.4, px: 1, cursor: "pointer", borderRadius: 1, mb: 0.5,
+          display: "flex", alignItems: "center", justifyContent: "space-between",
           bgcolor: reviewMode ? "warning.light" : "transparent",
           "&:hover": { bgcolor: reviewMode ? "warning.light" : "action.hover" },
         }}
@@ -117,25 +166,18 @@ export default function CategorySidebar({ categories, selectedSlug, reviewMode, 
             sx={{
               bgcolor: reviewMode ? "warning.main" : "action.disabledBackground",
               color: reviewMode ? "warning.contrastText" : "text.secondary",
-              borderRadius: "10px",
-              px: 0.8,
-              py: 0.1,
-              fontWeight: 600,
-              lineHeight: 1.6,
+              borderRadius: "10px", px: 0.8, py: 0.1, fontWeight: 600, lineHeight: 1.6,
             }}
           >
             {reviewDueCount}
           </Typography>
         )}
       </Box>
+
       <Box
         onClick={handleAll}
         sx={{
-          py: 0.4,
-          px: 1,
-          cursor: "pointer",
-          borderRadius: 1,
-          mb: 0.5,
+          py: 0.4, px: 1, cursor: "pointer", borderRadius: 1, mb: 0.5,
           bgcolor: isAllSelected ? "action.selected" : "transparent",
           "&:hover": { bgcolor: isAllSelected ? "action.selected" : "action.hover" },
         }}
@@ -147,6 +189,7 @@ export default function CategorySidebar({ categories, selectedSlug, reviewMode, 
           전체
         </Typography>
       </Box>
+
       {roots.map((cat) => (
         <CategoryNode
           key={cat.id}
@@ -155,6 +198,8 @@ export default function CategorySidebar({ categories, selectedSlug, reviewMode, 
           selectedSlug={reviewMode ? null : selectedSlug}
           depth={1}
           onSelect={handleSelect}
+          openIds={openIds}
+          toggleOpen={toggleOpen}
         />
       ))}
     </Box>
