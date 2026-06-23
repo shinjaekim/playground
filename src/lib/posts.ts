@@ -106,6 +106,15 @@ export async function getPost(slug: string): Promise<Post> {
   };
 }
 
+export async function getReviewDueCount(): Promise<number> {
+  const { count, error } = await supabase
+    .from("posts")
+    .select("*", { count: "exact", head: true })
+    .lte("next_review_at", new Date().toISOString());
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export async function getRelatedPosts(slug: string, tagIds: string[], limit = 4): Promise<PostMeta[]> {
   if (tagIds.length === 0) return [];
 
