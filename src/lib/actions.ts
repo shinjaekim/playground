@@ -12,22 +12,32 @@ const REVIEW_INTERVALS = [1, 3, 7, 14, 30, 60];
 export async function markReviewed(slug: string) {
   const { data: post, error } = await supabaseAdmin
     .from("posts")
-    .select("review_count")
+    .select("review_count, next_review_at")
     .eq("slug", slug)
     .single();
 
   if (error) throw new Error(error.message);
 
-  const newCount = (post.review_count ?? 0) + 1;
-  const intervalDays = REVIEW_INTERVALS[Math.min(newCount, REVIEW_INTERVALS.length - 1)];
-  const nextReviewAt = new Date();
-  nextReviewAt.setDate(nextReviewAt.getDate() + intervalDays);
+  const now = new Date();
+  const currentCount = post.review_count ?? 0;
+  const currentIntervalDays = REVIEW_INTERVALS[Math.min(currentCount, REVIEW_INTERVALS.length - 1)];
+
+  // 기한 초과 여부: 현재 단계 인터벌보다 더 많이 밀렸으면 단계 올리지 않음
+  const dueDate = post.next_review_at ? new Date(post.next_review_at) : now;
+  const overdueDays = (now.getTime() - dueDate.getTime()) / 86400000;
+  const isLate = overdueDays > currentIntervalDays;
+
+  const nextIntervalDays = isLate
+    ? currentIntervalDays // 늦었으면 같은 단계 다시
+    : REVIEW_INTERVALS[Math.min(currentCount + 1, REVIEW_INTERVALS.length - 1)];
+
+  const nextReviewAt = new Date(now.getTime() + nextIntervalDays * 86400000);
 
   const { error: updateError } = await supabaseAdmin
     .from("posts")
     .update({
-      review_count: newCount,
-      last_reviewed_at: new Date().toISOString(),
+      review_count: isLate ? currentCount : currentCount + 1,
+      last_reviewed_at: now.toISOString(),
       next_review_at: nextReviewAt.toISOString(),
     })
     .eq("slug", slug);
