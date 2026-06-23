@@ -4,6 +4,7 @@ import { Box, Button, Container, MenuItem, TextField, Typography } from "@mui/ma
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import TagSelector from "@/components/TagSelector";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import type { Category } from "@/lib/posts";
 
 function flattenCategories(
@@ -74,16 +75,7 @@ export default async function EditPostPage({ params }: { params: Promise<{ slug:
             initialSelected={currentTags}
             createTagInline={createTagInline}
           />
-          <TextField
-            name="content"
-            label="내용 (Markdown)"
-            required
-            fullWidth
-            multiline
-            minRows={16}
-            defaultValue={post.content}
-            slotProps={{ input: { sx: { fontFamily: "monospace", fontSize: 14 } } }}
-          />
+          <MarkdownEditor defaultValue={post.content} />
           <Box sx={{ display: "flex", gap: 2 }}>
             <Button type="submit" variant="contained" size="large">저장</Button>
             <Link href="/admin" style={{ textDecoration: "none" }}>

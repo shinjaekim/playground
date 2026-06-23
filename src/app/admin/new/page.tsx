@@ -3,6 +3,7 @@ import { supabaseAdmin } from "@/lib/supabase-admin";
 import { Box, Button, Container, MenuItem, TextField, Typography } from "@mui/material";
 import Link from "next/link";
 import TagSelector from "@/components/TagSelector";
+import MarkdownEditor from "@/components/MarkdownEditor";
 import type { Category } from "@/lib/posts";
 
 function flattenCategories(
@@ -61,15 +62,7 @@ export default async function NewPostPage() {
             ))}
           </TextField>
           <TagSelector allTags={allTags ?? []} createTagInline={createTagInline} />
-          <TextField
-            name="content"
-            label="내용 (Markdown)"
-            required
-            fullWidth
-            multiline
-            minRows={16}
-            slotProps={{ input: { sx: { fontFamily: "monospace", fontSize: 14 } } }}
-          />
+          <MarkdownEditor />
           <Box sx={{ display: "flex", gap: 2 }}>
             <Button type="submit" variant="contained" size="large">저장</Button>
             <Link href="/admin" style={{ textDecoration: "none" }}>
