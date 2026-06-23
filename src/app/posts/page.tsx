@@ -36,6 +36,10 @@ export default async function PostsPage({
         <CategorySidebar
           categories={categories}
           selectedSlug={categorySlug ?? null}
+          postCounts={allPosts.reduce<Record<string, number>>((acc, p) => {
+            if (p.category_id) acc[p.category_id] = (acc[p.category_id] ?? 0) + 1;
+            return acc;
+          }, {})}
         />
         <Box sx={{ flex: 1 }}>
           {posts.length === 0 ? (

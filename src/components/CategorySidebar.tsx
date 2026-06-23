@@ -8,6 +8,7 @@ import type { Category } from "@/lib/posts";
 interface Props {
   categories: Category[];
   selectedSlug: string | null;
+  postCounts: Record<string, number>;
 }
 
 function CategoryNode({
@@ -18,6 +19,7 @@ function CategoryNode({
   onSelect,
   openIds,
   toggleOpen,
+  postCounts,
 }: {
   category: Category;
   categories: Category[];
@@ -26,6 +28,7 @@ function CategoryNode({
   onSelect: (slug: string) => void;
   openIds: Set<string>;
   toggleOpen: (id: string) => void;
+  postCounts: Record<string, number>;
 }) {
   const children = categories.filter((c) => c.parent_id === category.id);
   const isLeaf = children.length === 0;
@@ -76,6 +79,11 @@ function CategoryNode({
           }}
         >
           {category.name}
+          {isLeaf && (
+            <Typography component="span" variant="caption" sx={{ ml: 0.5, color: "text.disabled" }}>
+              ({postCounts[category.id] ?? 0})
+            </Typography>
+          )}
         </Typography>
       </Box>
 
@@ -90,13 +98,14 @@ function CategoryNode({
             onSelect={onSelect}
             openIds={openIds}
             toggleOpen={toggleOpen}
+            postCounts={postCounts}
           />
         ))}
     </Box>
   );
 }
 
-export default function CategorySidebar({ categories, selectedSlug }: Props) {
+export default function CategorySidebar({ categories, selectedSlug, postCounts }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
@@ -148,6 +157,7 @@ export default function CategorySidebar({ categories, selectedSlug }: Props) {
           onSelect={(slug) => router.push(`${pathname}?category=${slug}`)}
           openIds={openIds}
           toggleOpen={toggleOpen}
+          postCounts={postCounts}
         />
       ))}
     </Box>
