@@ -24,7 +24,7 @@ export default function Navbar({ reviewDueCount }: { reviewDueCount: number }) {
         >
           playground
         </Typography>
-        <Box sx={{ display: "flex", gap: 0.5 }}>
+        <Box sx={{ display: "flex", gap: 0.5, flex: 1 }}>
           {NAV_ITEMS.map((item) => (
             <Button
               key={item.href}
@@ -56,6 +56,13 @@ export default function Navbar({ reviewDueCount }: { reviewDueCount: number }) {
             </Button>
           ))}
         </Box>
+        <Typography
+          variant="caption"
+          color="#555"
+          sx={{ ml: "auto", cursor: "default", userSelect: "none" }}
+        >
+          ⌘K
+        </Typography>
       </Toolbar>
     </AppBar>
   );
