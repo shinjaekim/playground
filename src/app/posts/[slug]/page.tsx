@@ -1,6 +1,6 @@
-import { getPost, getReviewStatus } from "@/lib/posts";
+import { getPost, getRelatedPosts, getReviewStatus } from "@/lib/posts";
 import ReviewButton from "@/components/ReviewButton";
-import { Container, Typography, Chip, Box, Button, Paper } from "@mui/material";
+import { Container, Typography, Chip, Box, Button, Paper, Divider } from "@mui/material";
 import Link from "next/link";
 
 export const revalidate = 60;
@@ -9,6 +9,7 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
   const { slug } = await params;
   const post = await getPost(slug);
   const status = getReviewStatus(post.next_review_at);
+  const relatedPosts = await getRelatedPosts(slug, post.tags.map((t) => t.id));
 
   return (
     <Container maxWidth="md" sx={{ py: 6 }}>
@@ -49,6 +50,39 @@ export default async function PostPage({ params }: { params: Promise<{ slug: str
           nextReviewAt={post.next_review_at}
         />
       </Paper>
+
+      {relatedPosts.length > 0 && (
+        <Box sx={{ mt: 6 }}>
+          <Typography variant="subtitle2" color="text.secondary" sx={{ mb: 2 }}>
+            연관 글
+          </Typography>
+          <Box sx={{ display: "flex", flexDirection: "column" }}>
+            {relatedPosts.map((related, i) => (
+              <Box key={related.slug}>
+                <Link
+                  href={`/posts/${related.slug}`}
+                  style={{ display: "block", textDecoration: "none", color: "inherit" }}
+                >
+                  <Box sx={{ py: 2, "&:hover p": { color: "primary.main" } }}>
+                    <Typography
+                      variant="body1"
+                      sx={{ fontWeight: 500, transition: "color 0.15s", mb: 0.5 }}
+                    >
+                      {related.title}
+                    </Typography>
+                    <Box sx={{ display: "flex", gap: 0.5, flexWrap: "wrap" }}>
+                      {related.tags.map((tag) => (
+                        <Chip key={tag.id} label={tag.name} size="small" />
+                      ))}
+                    </Box>
+                  </Box>
+                </Link>
+                {i < relatedPosts.length - 1 && <Divider />}
+              </Box>
+            ))}
+          </Box>
+        </Box>
+      )}
     </Container>
   );
 }

@@ -106,6 +106,40 @@ export async function getPost(slug: string): Promise<Post> {
   };
 }
 
+export async function getRelatedPosts(slug: string, tagIds: string[], limit = 4): Promise<PostMeta[]> {
+  if (tagIds.length === 0) return [];
+
+  const { data: links } = await supabase
+    .from("post_tags")
+    .select("post_id")
+    .in("tag_id", tagIds);
+
+  if (!links || links.length === 0) return [];
+
+  const postIds = [...new Set(links.map((l: any) => l.post_id))];
+
+  const { data, error } = await supabase
+    .from("posts")
+    .select("slug, title, date, category_id, review_count, last_reviewed_at, next_review_at, post_tags(tags(id, slug, name))")
+    .in("id", postIds)
+    .neq("slug", slug)
+    .order("date", { ascending: false })
+    .limit(limit);
+
+  if (error || !data) return [];
+
+  return data.map((post: any) => ({
+    slug: post.slug,
+    title: post.title,
+    date: post.date,
+    category_id: post.category_id ?? null,
+    review_count: post.review_count ?? 0,
+    last_reviewed_at: post.last_reviewed_at ?? null,
+    next_review_at: post.next_review_at ?? null,
+    tags: (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean),
+  }));
+}
+
 export function buildGraphData(posts: PostMeta[]): GraphData {
   const tagMap = new Map<string, { count: number; name: string }>();
   for (const post of posts) {
