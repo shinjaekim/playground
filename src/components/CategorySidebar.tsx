@@ -8,8 +8,6 @@ import type { Category } from "@/lib/posts";
 interface Props {
   categories: Category[];
   selectedSlug: string | null;
-  reviewMode: boolean;
-  reviewDueCount: number;
 }
 
 function CategoryNode({
@@ -35,11 +33,8 @@ function CategoryNode({
   const isOpen = openIds.has(category.id);
 
   function handleClick() {
-    if (isLeaf) {
-      onSelect(category.slug);
-    } else {
-      toggleOpen(category.id);
-    }
+    if (isLeaf) onSelect(category.slug);
+    else toggleOpen(category.id);
   }
 
   return (
@@ -77,11 +72,7 @@ function CategoryNode({
           variant="body2"
           sx={{
             fontWeight: isSelected ? 600 : 400,
-            color: isSelected
-              ? "primary.main"
-              : isLeaf
-              ? "text.primary"
-              : "text.secondary",
+            color: isSelected ? "primary.main" : isLeaf ? "text.primary" : "text.secondary",
           }}
         >
           {category.name}
@@ -105,22 +96,20 @@ function CategoryNode({
   );
 }
 
-export default function CategorySidebar({ categories, selectedSlug, reviewMode, reviewDueCount }: Props) {
+export default function CategorySidebar({ categories, selectedSlug }: Props) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // 부모 카테고리 ID 집합 — 초기 상태에서 모두 열림
-  const [openIds, setOpenIds] = useState<Set<string>>(() => {
-    const parentIds = new Set(
+  const [openIds, setOpenIds] = useState<Set<string>>(() =>
+    new Set(
       categories
         .filter((c) => categories.some((other) => other.parent_id === c.id))
         .map((c) => c.id)
-    );
-    return parentIds;
-  });
+    )
+  );
 
   const roots = categories.filter((c) => c.parent_id === null);
-  const isAllSelected = !reviewMode && selectedSlug === null;
+  const isAllSelected = selectedSlug === null;
 
   function toggleOpen(id: string) {
     setOpenIds((prev) => {
@@ -131,51 +120,10 @@ export default function CategorySidebar({ categories, selectedSlug, reviewMode, 
     });
   }
 
-  const handleSelect = (slug: string) => {
-    router.push(`${pathname}?category=${slug}`);
-  };
-
-  const handleAll = () => {
-    router.push(pathname);
-  };
-
-  const handleReview = () => {
-    router.push(`${pathname}?review=due`);
-  };
-
   return (
     <Box sx={{ width: 200, flexShrink: 0 }}>
       <Box
-        onClick={handleReview}
-        sx={{
-          py: 0.4, px: 1, cursor: "pointer", borderRadius: 1, mb: 0.5,
-          display: "flex", alignItems: "center", justifyContent: "space-between",
-          bgcolor: reviewMode ? "warning.light" : "transparent",
-          "&:hover": { bgcolor: reviewMode ? "warning.light" : "action.hover" },
-        }}
-      >
-        <Typography
-          variant="body2"
-          sx={{ fontWeight: reviewMode ? 600 : 400, color: reviewMode ? "warning.dark" : "text.primary" }}
-        >
-          복습 시기
-        </Typography>
-        {reviewDueCount > 0 && (
-          <Typography
-            variant="caption"
-            sx={{
-              bgcolor: reviewMode ? "warning.main" : "action.disabledBackground",
-              color: reviewMode ? "warning.contrastText" : "text.secondary",
-              borderRadius: "10px", px: 0.8, py: 0.1, fontWeight: 600, lineHeight: 1.6,
-            }}
-          >
-            {reviewDueCount}
-          </Typography>
-        )}
-      </Box>
-
-      <Box
-        onClick={handleAll}
+        onClick={() => router.push(pathname)}
         sx={{
           py: 0.4, px: 1, cursor: "pointer", borderRadius: 1, mb: 0.5,
           bgcolor: isAllSelected ? "action.selected" : "transparent",
@@ -195,9 +143,9 @@ export default function CategorySidebar({ categories, selectedSlug, reviewMode, 
           key={cat.id}
           category={cat}
           categories={categories}
-          selectedSlug={reviewMode ? null : selectedSlug}
+          selectedSlug={selectedSlug}
           depth={1}
-          onSelect={handleSelect}
+          onSelect={(slug) => router.push(`${pathname}?category=${slug}`)}
           openIds={openIds}
           toggleOpen={toggleOpen}
         />

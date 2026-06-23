@@ -1,4 +1,4 @@
-import { getAllPostMeta, getCategories, getCategoryDescendantIds, getReviewStatus } from "@/lib/posts";
+import { getAllPostMeta, getCategories, getReviewStatus } from "@/lib/posts";
 import CategorySidebar from "@/components/CategorySidebar";
 import { Box, Chip, Container, Divider, Typography } from "@mui/material";
 import Link from "next/link";
@@ -8,28 +8,22 @@ export const revalidate = 60;
 export default async function PostsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ category?: string; review?: string }>;
+  searchParams: Promise<{ category?: string }>;
 }) {
-  const { category: categorySlug, review } = await searchParams;
-  const reviewMode = review === "due";
+  const { category: categorySlug } = await searchParams;
 
   const [allPosts, categories] = await Promise.all([
     getAllPostMeta(),
     getCategories(),
   ]);
 
-  const reviewDueCount = allPosts.filter(
-    (p) => getReviewStatus(p.next_review_at) === "due"
-  ).length;
-
   let posts = allPosts;
-  if (reviewMode) {
-    posts = allPosts.filter((p) => getReviewStatus(p.next_review_at) === "due");
-  } else if (categorySlug) {
+  if (categorySlug) {
     const selected = categories.find((c) => c.slug === categorySlug);
     if (selected) {
+      const { getCategoryDescendantIds } = await import("@/lib/posts");
       const descendantIds = getCategoryDescendantIds(categories, selected.id);
-      posts = allPosts.filter((post) => post.category_id && descendantIds.includes(post.category_id));
+      posts = allPosts.filter((p) => p.category_id && descendantIds.includes(p.category_id));
     }
   }
 
@@ -41,15 +35,11 @@ export default async function PostsPage({
       <Box sx={{ display: "flex", gap: 4, alignItems: "flex-start" }}>
         <CategorySidebar
           categories={categories}
-          selectedSlug={reviewMode ? null : (categorySlug ?? null)}
-          reviewMode={reviewMode}
-          reviewDueCount={reviewDueCount}
+          selectedSlug={categorySlug ?? null}
         />
         <Box sx={{ flex: 1 }}>
           {posts.length === 0 ? (
-            <Typography color="text.secondary">
-              {reviewMode ? "복습할 글이 없습니다." : "글이 없습니다."}
-            </Typography>
+            <Typography color="text.secondary">글이 없습니다.</Typography>
           ) : (
             <Box sx={{ display: "flex", flexDirection: "column" }}>
               {posts.map((post, i) => {

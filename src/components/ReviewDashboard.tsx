@@ -26,15 +26,27 @@ export default function ReviewDashboard({ posts, categories }: Props) {
     [categories]
   );
 
-  const stageCounts = useMemo(
-    () => REVIEW_INTERVALS.map((_, i) => posts.filter((p) => getStageIndex(p.review_count) === i).length),
-    [posts]
-  );
+  const stageCounts = useMemo(() => {
+    const now = new Date();
+    return REVIEW_INTERVALS.map((_, i) =>
+      posts.filter(
+        (p) =>
+          getStageIndex(p.review_count) === i &&
+          p.next_review_at !== null &&
+          new Date(p.next_review_at) <= now
+      ).length
+    );
+  }, [posts]);
 
-  const stagePosts = useMemo(
-    () => posts.filter((p) => getStageIndex(p.review_count) === selectedStage),
-    [posts, selectedStage]
-  );
+  const stagePosts = useMemo(() => {
+    const now = new Date();
+    return posts.filter(
+      (p) =>
+        getStageIndex(p.review_count) === selectedStage &&
+        p.next_review_at !== null &&
+        new Date(p.next_review_at) <= now
+    );
+  }, [posts, selectedStage]);
 
   const stageCategories = useMemo(() => {
     const ids = new Set(stagePosts.map((p) => p.category_id).filter(Boolean) as string[]);
