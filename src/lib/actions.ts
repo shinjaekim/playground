@@ -35,6 +35,7 @@ export async function markReviewed(slug: string) {
   if (updateError) throw new Error(updateError.message);
 
   revalidatePath("/posts");
+  revalidatePath("/review");
   revalidatePath(`/posts/${slug}`);
 }
 

@@ -7,6 +7,7 @@ import { usePathname } from "next/navigation";
 const NAV_ITEMS = [
   { label: "맵", href: "/graph" },
   { label: "글 목록", href: "/posts" },
+  { label: "복습", href: "/review" },
 ];
 
 export default function Navbar() {
