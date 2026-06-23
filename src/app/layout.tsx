@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import ThemeRegistry from "@/components/ThemeRegistry";
 import Navbar from "@/components/Navbar";
+import SearchModal from "@/components/SearchModal";
 import { getReviewDueCount } from "@/lib/posts";
 
 export const metadata: Metadata = {
@@ -20,6 +21,7 @@ export default async function RootLayout({
       <body>
         <ThemeRegistry>
           <Navbar reviewDueCount={reviewDueCount} />
+          <SearchModal />
           {children}
         </ThemeRegistry>
       </body>
