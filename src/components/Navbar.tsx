@@ -10,7 +10,7 @@ const NAV_ITEMS = [
   { label: "복습", href: "/review" },
 ];
 
-export default function Navbar() {
+export default function Navbar({ reviewDueCount }: { reviewDueCount: number }) {
   const pathname = usePathname();
 
   return (
@@ -35,9 +35,24 @@ export default function Navbar() {
                 color: pathname === item.href ? "#fff" : "#888",
                 fontWeight: pathname === item.href ? 700 : 400,
                 "&:hover": { color: "#fff" },
+                position: "relative",
               }}
             >
               {item.label}
+              {item.href === "/review" && reviewDueCount > 0 && (
+                <Box
+                  component="span"
+                  sx={{
+                    position: "absolute",
+                    top: 6,
+                    right: 4,
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    bgcolor: "error.main",
+                  }}
+                />
+              )}
             </Button>
           ))}
         </Box>
